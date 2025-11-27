@@ -1,0 +1,1 @@
+export const FRAME_RATE = 15; // 提取帧的帧率

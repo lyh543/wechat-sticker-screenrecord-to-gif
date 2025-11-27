@@ -2,6 +2,7 @@ import type { Logger } from './Logger'
 
 export const extractFramesFromVideo = async (
   file: File,
+  frameRate: number,
   logger: Logger
 ): Promise<ImageData[]> => {
   const log = logger.log
@@ -13,7 +14,7 @@ export const extractFramesFromVideo = async (
   
   try {
     video.src = videoUrl
-    await video.load()
+    video.load()
     
     log('加载视频元数据...')
     await new Promise((resolve, reject) => {
@@ -32,7 +33,6 @@ export const extractFramesFromVideo = async (
       throw new Error('无法创建 canvas 上下文')
     }
 
-    const frameRate = 10
     const duration = video.duration
     const frameCount = Math.floor(duration * frameRate)
     const extractedFrames: ImageData[] = []

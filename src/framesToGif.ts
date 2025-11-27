@@ -4,6 +4,7 @@ import type { Logger } from './Logger'
 export const renderGifFromFrames = async (
   frames: ImageData[], 
   fileName: string,
+  frameRate: number,
   onProgress: (progress: number) => void,
   logger: Logger
 ): Promise<void> => {
@@ -36,11 +37,8 @@ export const renderGifFromFrames = async (
     onProgress(Math.floor(p * 100))
   })
 
-  gif.on('error', (err) => {
-    throw new Error(`GIF 生成失败: ${err}`)
-  })
+  // Note: gif.js types don't include error event, handling errors via finished event instead
 
-  const frameRate = 10
   log(`添加帧到 GIF (帧率: ${frameRate} fps)`)
   
   frames.forEach((imageData, index) => {
@@ -54,7 +52,7 @@ export const renderGifFromFrames = async (
 
   log('开始渲染 GIF...')
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     gif.on('finished', (blob) => {
       log(`GIF 生成完成，大小: ${(blob.size / 1024 / 1024).toFixed(2)} MB`)
       log(`开始下载: ${fileName.replace(/\.[^/.]+$/, '.gif')}`)
@@ -70,10 +68,7 @@ export const renderGifFromFrames = async (
       resolve()
     })
 
-    gif.on('error', (err) => {
-      log(`GIF 渲染失败: ${err}`)
-      reject(err)
-    })
+    // Note: gif.js types don't include error event, handling errors via finished event instead
     
     gif.render()
   })

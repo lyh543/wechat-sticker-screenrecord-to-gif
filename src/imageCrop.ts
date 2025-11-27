@@ -8,12 +8,6 @@ export interface CropRegion {
   height: number
 }
 
-const areColorsEqual = (data1: Uint8ClampedArray, index1: number, data2: Uint8ClampedArray, index2: number): boolean => {
-  return data1[index1] === data2[index2] &&
-         data1[index1 + 1] === data2[index2 + 1] &&
-         data1[index1 + 2] === data2[index2 + 2] &&
-         data1[index1 + 3] === data2[index2 + 3]
-}
 
 const isRowUniform = (frames: ImageData[], y: number, tolerance = 0.01): boolean => {
   if (frames.length === 0) return false
@@ -45,11 +39,9 @@ const isRowUniform = (frames: ImageData[], y: number, tolerance = 0.01): boolean
   
   // 找到出现次数最多的颜色
   let maxCount = 0
-  let dominantColor: Color = { r: 0, g: 0, b: 0, a: 255 }
   colorMap.forEach((entry) => {
     if (entry.count > maxCount) {
       maxCount = entry.count
-      dominantColor = entry.color
     }
   })
   
@@ -92,11 +84,9 @@ const isColumnUniform = (frames: ImageData[], x: number, tolerance = 0.01): bool
   
   // 找到出现次数最多的颜色
   let maxCount = 0
-  let dominantColor: Color = { r: 0, g: 0, b: 0, a: 255 }
   colorMap.forEach((entry) => {
     if (entry.count > maxCount) {
       maxCount = entry.count
-      dominantColor = entry.color
     }
   })
   

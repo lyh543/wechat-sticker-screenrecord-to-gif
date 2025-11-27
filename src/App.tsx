@@ -6,6 +6,7 @@ import { useLogger, LogViewer } from './Logger'
 import { detectBackgroundColor } from './colorDetection'
 import { replaceBackgroundInFrames } from './colorReplacement'
 import { detectCropRegion, cropFrames } from './imageCrop'
+import { detectCycle } from './detectCycle'
 
 function App() {
   const [converting, setConverting] = useState(false)
@@ -13,8 +14,9 @@ function App() {
   const [cropTolerance, setCropTolerance] = useState(0.02) // 裁剪容差，默认 2%
   const [removeBackground, setRemoveBackground] = useState(false) // 是否去除背景，默认关闭
   const [debugMode, setDebugMode] = useState(false) // 调试模式，默认关闭
+  const [frameRate, setFrameRate] = useState(15) // 帧率，默认 15 fps
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { logs, logger, clearLogs } = useLogger(debugMode)
+  const { logs, logger } = useLogger(debugMode)
 
   const resetState = () => {
     setConverting(false)
@@ -36,7 +38,7 @@ function App() {
 
     try {
       // 提取视频帧
-      let processedFrames = await extractFramesFromVideo(file, logger)
+      let processedFrames = await extractFramesFromVideo(file, frameRate, logger)
       
       if (processedFrames.length == 0) {
         logger.log('❌ 视频中没有可用的帧')
@@ -54,6 +56,17 @@ function App() {
       const cropRegion = await detectCropRegion(processedFrames, cropTolerance, logger)
       processedFrames = await cropFrames(processedFrames, cropRegion, logger)
 
+      // 检测循环边界
+      const cycleBoundaries = detectCycle(processedFrames, { logger })
+      
+      if (cycleBoundaries.length > 0) {
+        const firstCycle = cycleBoundaries[0]
+        logger.log(`将使用第一个循环片段: 帧${firstCycle.startFrame}-${firstCycle.endFrame}`)
+        processedFrames = processedFrames.slice(firstCycle.startFrame, firstCycle.endFrame + 1)
+      } else {
+        logger.log('未检测到循环，使用全部帧')
+      }
+
       // 根据用户选择决定是否将底色替换为透明色
       if (removeBackground) {
         processedFrames = await replaceBackgroundInFrames(processedFrames, backgroundColor, logger)
@@ -62,7 +75,7 @@ function App() {
       }
 
       // 生成 GIF
-      await renderGifFromFrames(processedFrames, file.name, setProgress, logger)
+      await renderGifFromFrames(processedFrames, file.name, frameRate, setProgress, logger)
       
       logger.log('========== 转换完成 ==========')
       resetState()
@@ -77,7 +90,7 @@ function App() {
 
   return (
     <div style={{ padding: '40px', textAlign: 'center', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1>视频转 GIF</h1>
+      <h1>微信表情包录屏转 GIF</h1>
       
       <div style={{ marginTop: '30px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
@@ -116,6 +129,24 @@ function App() {
         </label>
         <div style={{ fontSize: '12px', color: '#666', marginTop: '-5px' }}>
           容差越大，裁剪越激进（可能裁掉更多边缘）
+        </div>
+        
+        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+          <span>帧率:</span>
+          <input
+            type="range"
+            min="5"
+            max="30"
+            step="1"
+            value={frameRate}
+            onChange={(e) => setFrameRate(parseInt(e.target.value))}
+            disabled={converting}
+            style={{ width: '200px' }}
+          />
+          <span style={{ minWidth: '60px', fontWeight: 'bold' }}>{frameRate} fps</span>
+        </label>
+        <div style={{ fontSize: '12px', color: '#666', marginTop: '-5px' }}>
+          帧率越高，动画越流畅，但文件越大、生成越慢。推荐 10-15fps
         </div>
       </div>
       
