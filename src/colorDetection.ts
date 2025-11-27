@@ -1,3 +1,5 @@
+import type { Logger } from "./Logger"
+
 export interface Color {
   r: number
   g: number
@@ -11,16 +13,15 @@ export const colorToString = (color: Color): string => {
 
 export const detectBackgroundColor = (
   imageData: ImageData,
-  onLog?: (message: string) => void
+  logger: Logger,
 ): Color => {
-  const log = onLog || (() => {})
   
   const width = imageData.width
   const height = imageData.height
   const data = imageData.data
   
-  log('开始识别底色...')
-  log(`图片尺寸: ${width}x${height}`)
+  logger.log('开始识别底色...')
+  logger.log(`图片尺寸: ${width}x${height}`)
   
   const colorMap = new Map<string, { color: Color; count: number }>()
   
@@ -110,7 +111,7 @@ export const detectBackgroundColor = (
     }
   })
   
-  log(`识别到底色: ${colorToString(backgroundColor)} (出现 ${maxCount}/${totalSamples} 次，占比 ${((maxCount / totalSamples) * 100).toFixed(2)}%)`)
+  logger.log(`识别到底色: ${colorToString(backgroundColor)} (出现 ${maxCount}/${totalSamples} 次，占比 ${((maxCount / totalSamples) * 100).toFixed(2)}%)`)
   
   return backgroundColor
 }

@@ -1,8 +1,10 @@
+import type { Logger } from './Logger'
+
 export const extractFramesFromVideo = async (
   file: File,
-  onLog?: (message: string) => void
+  logger: Logger
 ): Promise<ImageData[]> => {
-  const log = onLog || (() => {})
+  const log = logger.log
   
   log(`开始处理视频文件: ${file.name}`)
   

@@ -1,4 +1,5 @@
 import type { Color } from './colorDetection'
+import type { Logger } from './Logger'
 
 export interface CropRegion {
   left: number
@@ -106,13 +107,11 @@ const isColumnUniform = (frames: ImageData[], x: number, tolerance = 0.01): bool
   return ratio <= tolerance
 }
 
-export const detectCropRegion = (
+export const detectCropRegion = async (
   frames: ImageData[],
   tolerance: number,
-  onLog?: (message: string) => void
-): CropRegion => {
-  const log = onLog || (() => {})
-  
+  logger: Logger
+): Promise<CropRegion> => {
   if (frames.length === 0) {
     throw new Error('没有可用的帧')
   }
@@ -120,8 +119,8 @@ export const detectCropRegion = (
   const width = frames[0].width
   const height = frames[0].height
   
-  log('开始检测可裁剪区域...')
-  log(`原始尺寸: ${width}x${height}`)
+  logger.log('开始检测可裁剪区域...')
+  logger.log(`原始尺寸: ${width}x${height}`)
   
   // 设置边框
   const borderLeft = 0
@@ -129,13 +128,14 @@ export const detectCropRegion = (
   const borderTop = Math.floor(height / 8)
   const borderBottom = Math.floor(height / 8)
   
-  log(`边框设置: 上=${borderTop}px, 下=${borderBottom}px, 左=${borderLeft}px, 右=${borderRight}px`)
-  log('边框区域也将被裁剪')
-  log(`容差设置: ${(tolerance * 100).toFixed(2)}% (tolerance=${tolerance})`)
+  logger.log(`边框设置: 上=${borderTop}px, 下=${borderBottom}px, 左=${borderLeft}px, 右=${borderRight}px`)
+  logger.log('边框区域也将被裁剪')
+  logger.log(`容差设置: ${(tolerance * 100).toFixed(2)}% (tolerance=${tolerance})`)
+  await logger.yield()
   
   // 从左往右找第一列不可裁剪的列（从边框之后开始）
   let left = borderLeft
-  log(`开始从左往右扫描 (从列 ${borderLeft} 到列 ${width - borderRight - 1})...`)
+  logger.debug(`开始从左往右扫描 (从列 ${borderLeft} 到列 ${width - borderRight - 1})...`)
   
   // 先输出前几列的颜色统计
   for (let x = 0; x < Math.min(3, width); x++) {
@@ -151,7 +151,8 @@ export const detectCropRegion = (
     const totalPixels = height * frames.length
     const colorCount = colorMap.size
     const topColor = Array.from(colorMap.entries()).sort((a, b) => b[1] - a[1])[0]
-    log(`  列 ${x} 颜色统计: 共 ${colorCount} 种颜色, 最多的是 ${topColor[0]} 出现 ${topColor[1]}/${totalPixels} 次`)
+    logger.debug(`  列 ${x} 颜色统计: 共 ${colorCount} 种颜色, 最多的是 ${topColor[0]} 出现 ${topColor[1]}/${totalPixels} 次`)
+    await logger.yield()
   }
   
   for (let x = borderLeft; x < width - borderRight; x++) {
@@ -183,25 +184,26 @@ export const detectCropRegion = (
       }
       const diffPx = totalPx - samePixels
       const ratio = diffPx / totalPx
-      log(`  列 ${x}: ${uniform ? '纯色' : '有内容'} (参考色: rgba(${refR},${refG},${refB},${refA}), 不同像素: ${diffPx}/${totalPx}, 比例: ${(ratio * 100).toFixed(4)}%, 容差: ${(tolerance * 100).toFixed(2)}%, 判定: ${ratio <= tolerance ? '✓通过' : '✗不通过'})`)
+      logger.debug(`  列 ${x}: ${uniform ? '纯色' : '有内容'} (参考色: rgba(${refR},${refG},${refB},${refA}), 不同像素: ${diffPx}/${totalPx}, 比例: ${(ratio * 100).toFixed(4)}%, 容差: ${(tolerance * 100).toFixed(2)}%, 判定: ${ratio <= tolerance ? '✓通过' : '✗不通过'})`)
     }
     if (!uniform) {
       left = x
-      log(`  找到左边界: 列 ${left}`)
+      logger.debug(`  找到左边界: 列 ${left}`)
       break
     }
+    await logger.yield()
   }
   
   // 从右往左找第一列不可裁剪的列（到边框之前结束）
   let right = width - 1 - borderRight
-  log(`开始从右往左扫描 (从列 ${width - 1 - borderRight} 到列 ${borderLeft})...`)
+  logger.debug(`开始从右往左扫描 (从列 ${width - 1 - borderRight} 到列 ${borderLeft})...`)
   for (let x = width - 1 - borderRight; x >= borderLeft; x--) {
     const uniform = isColumnUniform(frames, x, tolerance)
     if (!uniform) {
       right = x
-      
+      await logger.yield()
       // 额外调试：检查右边界附近的列
-      log(`  检查右边界附近的列...`)
+      logger.debug(`  检查右边界附近的列...`)
       for (let debugX = right - 2; debugX <= Math.min(right + 2, width - 1); debugX++) {
         const colorMap = new Map<string, number>()
         for (const frame of frames) {
@@ -216,7 +218,7 @@ export const detectCropRegion = (
         const colorCount = colorMap.size
         const topColor = Array.from(colorMap.entries()).sort((a, b) => b[1] - a[1])[0]
         const topRatio = topColor[1] / totalPixels
-        log(`    列 ${debugX}: ${colorCount} 种颜色, 主色调 ${topColor[0]} 占比 ${(topRatio * 100).toFixed(2)}%, 非主色调 ${((1-topRatio) * 100).toFixed(2)}%`)
+        logger.debug(`    列 ${debugX}: ${colorCount} 种颜色, 主色调 ${topColor[0]} 占比 ${(topRatio * 100).toFixed(2)}%, 非主色调 ${((1-topRatio) * 100).toFixed(2)}%`)
       }
       
       break
@@ -248,27 +250,26 @@ export const detectCropRegion = (
     height: bottom - top + 1
   }
   
-  log(`检测到有效区域: left=${left}, top=${top}, width=${cropRegion.width}, height=${cropRegion.height}`)
-  log(`裁剪后尺寸: ${cropRegion.width}x${cropRegion.height}`)
+  logger.log(`检测到有效区域: left=${left}, top=${top}, width=${cropRegion.width}, height=${cropRegion.height}`)
+  logger.log(`裁剪后尺寸: ${cropRegion.width}x${cropRegion.height}`)
   
   const savedPercentage = (100 - (cropRegion.width * cropRegion.height) / (width * height) * 100).toFixed(2)
-  log(`节省空间: ${savedPercentage}%`)
+  logger.log(`节省空间: ${savedPercentage}%`)
   
   return cropRegion
 }
 
-export const cropFrames = (
+export const cropFrames = async (
   frames: ImageData[],
   cropRegion: CropRegion,
-  onLog?: (message: string) => void
-): ImageData[] => {
-  const log = onLog || (() => {})
-  
-  log(`开始裁剪 ${frames.length} 帧...`)
+  logger: Logger
+): Promise<ImageData[]> => {
+  logger.log(`开始裁剪 ${frames.length} 帧...`)
   
   const croppedFrames: ImageData[] = []
   
-  frames.forEach((frame, index) => {
+  for (let index = 0; index < frames.length; index++) {
+    const frame = frames[index]
     const croppedData = new Uint8ClampedArray(cropRegion.width * cropRegion.height * 4)
     
     for (let y = 0; y < cropRegion.height; y++) {
@@ -284,9 +285,14 @@ export const cropFrames = (
     }
     
     croppedFrames.push(new ImageData(croppedData, cropRegion.width, cropRegion.height))
-  })
+    
+    // 每处理 5 帧就让出控制权
+    if (index % 5 === 0) {
+      await logger.yield()
+    }
+  }
   
-  log(`裁剪完成`)
+  logger.log(`裁剪完成`)
   
   return croppedFrames
 }

@@ -1,12 +1,13 @@
 import {  colorToString } from './colorDetection'
 import type { Color } from './colorDetection'
+import type { Logger } from './Logger'
 
 export const replaceColorWithTransparent = (
   imageData: ImageData,
   targetColor: Color,
-  onLog?: (message: string) => void
+  logger: Logger
 ): ImageData => {
-  const log = onLog || (() => {})
+  const log = logger.log
   
   const width = imageData.width
   const height = imageData.height
@@ -36,26 +37,37 @@ export const replaceColorWithTransparent = (
   return new ImageData(data, width, height)
 }
 
-export const replaceBackgroundInFrames = (
+export const replaceBackgroundInFrames = async (
   frames: ImageData[],
   backgroundColor: Color,
-  onLog?: (message: string) => void
-): ImageData[] => {
-  const log = onLog || (() => {})
+  logger: Logger
+): Promise<ImageData[]> => {
+  const log = logger.log
   
   log(`开始将底色 ${colorToString(backgroundColor)} 替换为透明色...`)
   
   const processedFrames: ImageData[] = []
   
-  frames.forEach((frame, index) => {
-    const processed = replaceColorWithTransparent(frame, backgroundColor, (msg) => {
-      // 只在特定帧输出日志，避免日志过多
-      if ((index + 1) % 10 === 0 || index === 0 || index === frames.length - 1) {
-        log(`帧 ${index + 1}: ${msg}`)
-      }
-    })
+  for (let index = 0; index < frames.length; index++) {
+    const frame = frames[index]
+    const frameLogger: Logger = {
+      log: (msg: string) => {
+        // 只在特定帧输出日志，避免日志过多
+        if ((index + 1) % 10 === 0 || index === 0 || index === frames.length - 1) {
+          log(`帧 ${index + 1}: ${msg}`)
+        }
+      },
+      debug: logger.debug,
+      yield: logger.yield
+    }
+    const processed = replaceColorWithTransparent(frame, backgroundColor, frameLogger)
     processedFrames.push(processed)
-  })
+    
+    // 每处理 5 帧就让出控制权
+    if (index % 5 === 0) {
+      await logger.yield()
+    }
+  }
   
   log(`底色替换完成，共处理 ${frames.length} 帧`)
   

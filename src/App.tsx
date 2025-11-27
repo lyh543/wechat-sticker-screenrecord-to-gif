@@ -10,16 +10,15 @@ import { detectCropRegion, cropFrames } from './imageCrop'
 function App() {
   const [converting, setConverting] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [frames, setFrames] = useState<ImageData[]>([])
   const [cropTolerance, setCropTolerance] = useState(0.02) // 裁剪容差，默认 2%
-  const [removeBackground, setRemoveBackground] = useState(true) // 是否去除背景，默认开启
+  const [removeBackground, setRemoveBackground] = useState(false) // 是否去除背景，默认关闭
+  const [debugMode, setDebugMode] = useState(false) // 调试模式，默认关闭
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { logs, log, clearLogs } = useLogger()
+  const { logs, logger, clearLogs } = useLogger(debugMode)
 
   const resetState = () => {
     setConverting(false)
     setProgress(0)
-    setFrames([])
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
@@ -29,49 +28,48 @@ function App() {
     const file = e.target.files?.[0]
     if (!file) return
 
-    log("\n\n")
+    logger.log("\n\n")
     setConverting(true)
     setProgress(0)
 
-    log('========== 开始转换 ==========')
+    logger.log('========== 开始转换 ==========')
 
     try {
       // 提取视频帧
-      let processedFrames = await extractFramesFromVideo(file, log)
-      setFrames(processedFrames)
+      let processedFrames = await extractFramesFromVideo(file, logger)
       
       if (processedFrames.length == 0) {
-        log('❌ 视频中没有可用的帧')
-        log('========== 转换结束 ==========')
+        logger.log('❌ 视频中没有可用的帧')
+        logger.log('========== 转换结束 ==========')
         resetState()
         return
       }
 
       // 识别中间帧的底色
       const middleIndex = Math.floor(processedFrames.length / 2)
-      log(`使用第 ${middleIndex + 1} 帧（中间帧）进行底色识别`)
-      const backgroundColor = detectBackgroundColor(processedFrames[middleIndex], log)
+      logger.log(`使用第 ${middleIndex + 1} 帧（中间帧）进行底色识别`)
+      const backgroundColor = detectBackgroundColor(processedFrames[middleIndex], logger)
       
       // 检测并裁剪有效区域
-      const cropRegion = detectCropRegion(processedFrames, cropTolerance, log)
-      processedFrames = cropFrames(processedFrames, cropRegion, log)
+      const cropRegion = await detectCropRegion(processedFrames, cropTolerance, logger)
+      processedFrames = await cropFrames(processedFrames, cropRegion, logger)
 
       // 根据用户选择决定是否将底色替换为透明色
       if (removeBackground) {
-        processedFrames = replaceBackgroundInFrames(processedFrames, backgroundColor, log)
+        processedFrames = await replaceBackgroundInFrames(processedFrames, backgroundColor, logger)
       } else {
-        log('跳过底色替换（用户选择保留背景）')
+        logger.log('跳过底色替换（用户选择保留背景）')
       }
 
       // 生成 GIF
-      await renderGifFromFrames(processedFrames, file.name, setProgress, log)
+      await renderGifFromFrames(processedFrames, file.name, setProgress, logger)
       
-      log('========== 转换完成 ==========')
+      logger.log('========== 转换完成 ==========')
       resetState()
     } catch (error) {
       console.error('转换失败:', error)
       const errorMessage = error instanceof Error ? error.message : '未知错误'
-      log(`❌ 转换失败: ${errorMessage}`)
+      logger.log(`❌ 转换失败: ${errorMessage}`)
       alert(`转换失败: ${errorMessage}`)
       resetState()
     }
@@ -90,6 +88,16 @@ function App() {
             disabled={converting}
           />
           <span>去除背景（将底色替换为透明）</span>
+        </label>
+        
+        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+          <input
+            type="checkbox"
+            checked={debugMode}
+            onChange={(e) => setDebugMode(e.target.checked)}
+            disabled={converting}
+          />
+          <span>调试模式（显示详细日志）</span>
         </label>
         
         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>

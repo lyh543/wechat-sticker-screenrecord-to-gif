@@ -1,12 +1,13 @@
 import GIF from 'gif.js'
+import type { Logger } from './Logger'
 
 export const renderGifFromFrames = async (
   frames: ImageData[], 
   fileName: string,
-  onProgress?: (progress: number) => void,
-  onLog?: (message: string) => void
+  onProgress: (progress: number) => void,
+  logger: Logger
 ): Promise<void> => {
-  const log = onLog || (() => {})
+  const log = logger.log
   
   if (frames.length === 0) {
     throw new Error('没有可用的帧')
@@ -31,11 +32,9 @@ export const renderGifFromFrames = async (
 
   log('初始化 GIF 编码器 (workers: 2, quality: 10)')
 
-  if (onProgress) {
-    gif.on('progress', (p) => {
-      onProgress(Math.floor(p * 100))
-    })
-  }
+  gif.on('progress', (p) => {
+    onProgress(Math.floor(p * 100))
+  })
 
   gif.on('error', (err) => {
     throw new Error(`GIF 生成失败: ${err}`)
