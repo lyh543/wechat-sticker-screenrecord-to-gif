@@ -10,7 +10,7 @@ export default defineConfig({
       targets: [
         {
           src: 'node_modules/gif.js/dist/gif.worker.js',
-          dest: ''
+          dest: 'assets'
         }
       ]
     })

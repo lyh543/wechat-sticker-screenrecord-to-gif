@@ -47,7 +47,7 @@ function App() {
       const gif = new GIF({
         workers: 2,
         quality: 10,
-        workerScript: '/gif.worker.js'
+        workerScript: '/assets/gif.worker.js'
       })
 
       gif.on('progress', (p) => {
