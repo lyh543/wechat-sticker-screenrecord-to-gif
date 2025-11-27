@@ -1,0 +1,64 @@
+export const extractFramesFromVideo = async (
+  file: File,
+  onLog?: (message: string) => void
+): Promise<ImageData[]> => {
+  const log = onLog || (() => {})
+  
+  log(`开始处理视频文件: ${file.name}`)
+  
+  const video = document.createElement('video')
+  const videoUrl = URL.createObjectURL(file)
+  
+  try {
+    video.src = videoUrl
+    await video.load()
+    
+    log('加载视频元数据...')
+    await new Promise((resolve, reject) => {
+      video.onloadedmetadata = resolve
+      video.onerror = () => reject(new Error('视频加载失败'))
+    })
+
+    log(`视频尺寸: ${video.videoWidth}x${video.videoHeight}, 时长: ${video.duration.toFixed(2)}s`)
+
+    const canvas = document.createElement('canvas')
+    canvas.width = video.videoWidth
+    canvas.height = video.videoHeight
+    const ctx = canvas.getContext('2d')
+    
+    if (!ctx) {
+      throw new Error('无法创建 canvas 上下文')
+    }
+
+    const frameRate = 10
+    const duration = video.duration
+    const frameCount = Math.floor(duration * frameRate)
+    const extractedFrames: ImageData[] = []
+
+    log(`开始提取帧，帧率: ${frameRate} fps, 总帧数: ${frameCount}`)
+
+    for (let i = 0; i < frameCount; i++) {
+      video.currentTime = i / frameRate
+      await new Promise((resolve, reject) => {
+        video.onseeked = resolve
+        video.onerror = () => reject(new Error('视频帧读取失败'))
+      })
+      
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
+      const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+      extractedFrames.push(imageData)
+      
+      if ((i + 1) % 10 === 0 || i === frameCount - 1) {
+        log(`已提取 ${i + 1}/${frameCount} 帧`)
+      }
+    }
+
+    log(`帧提取完成，共 ${extractedFrames.length} 帧`)
+    return extractedFrames
+  } catch (error) {
+    log(`提取帧时出错: ${error instanceof Error ? error.message : '未知错误'}`)
+    throw error
+  } finally {
+    URL.revokeObjectURL(videoUrl)
+  }
+}
