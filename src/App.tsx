@@ -1,4 +1,5 @@
 import { useState, useRef } from 'react'
+import { useLocalStorage } from 'react-use'
 import './App.css'
 import { extractFramesFromVideo } from './imageProcessor/videoToFrames'
 import { renderGifFromFrames } from './imageProcessor/framesToGif'
@@ -12,10 +13,10 @@ import { cycleDetectProcessor } from './imageProcessor/detectCycle'
 function App() {
   const [converting, setConverting] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [cropTolerance, setCropTolerance] = useState(0.02) // 裁剪容差，默认 2%
-  const [removeBackground, setRemoveBackground] = useState(false) // 是否去除背景，默认关闭
-  const [debugMode, setDebugMode] = useState(false) // 调试模式，默认关闭
-  const [frameRate, setFrameRate] = useState(15) // 帧率，默认 15 fps
+  const [cropTolerance = 0.02, setCropTolerance] = useLocalStorage<number>('wechat-sticker-gif-cropTolerance') // 裁剪容差，默认 2%
+  const [removeBackground = false, setRemoveBackground] = useLocalStorage<boolean>('wechat-sticker-gif-removeBackground') // 是否去除背景，默认关闭
+  const [debugMode = false, setDebugMode] = useLocalStorage<boolean>('wechat-sticker-gif-debugMode') // 调试模式，默认关闭
+  const [frameRate = 5, setFrameRate] = useLocalStorage<number>('wechat-sticker-gif-frameRate') // 帧率，默认 15 fps
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { logs, logger } = useLogger(debugMode)
 

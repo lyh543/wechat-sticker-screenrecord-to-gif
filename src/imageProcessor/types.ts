@@ -18,10 +18,10 @@ export interface ProcessorConfig {
   logger: ProcessorLogger
 
   /** 原始视频的帧率（fps）。 */
-  frameRate?: number
+  frameRate: number
 
   /** 是否在后续步骤中移除背景。 */
-  removeBackground?: boolean
+  removeBackground: boolean
 
   /** 自动识别出的背景色。 */
   backgroundColor?: Color
@@ -30,7 +30,7 @@ export interface ProcessorConfig {
   backgroundSampleIndex?: number
 
   /** 裁剪容差（0-1），用于裁剪处理器。 */
-  cropTolerance?: number
+  cropTolerance: number
 
   /** 自动检测到的裁剪区域。 */
   cropRegion?: unknown
@@ -39,10 +39,10 @@ export interface ProcessorConfig {
   cycleBoundaries?: unknown
 
   /** 输出文件名（通常来自原视频文件名）。 */
-  fileName?: string
+  fileName: string
 
   /** 进度回调函数，一般由渲染 GIF 的处理器使用。 */
-  onProgress?: (progress: number) => void
+  onProgress: (progress: number) => void
 }
 
 export interface ImageProcessor {

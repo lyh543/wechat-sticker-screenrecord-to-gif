@@ -1,8 +1,8 @@
-import { FRAME_RATE } from '../constants';
 import type { Logger } from '../Logger';
 import type { ImageProcessor } from './types';
 
 interface DetectCycleOptions {
+  frameRate: number;
   hashDiffThreshold?: number;
   consecutiveMatch?: number;
   minCycleTime?: number;
@@ -21,7 +21,6 @@ interface CycleBoundary {
 /**
  * 基于 ImageData 数组的循环边界检测（轻量版，无依赖）
  * @param {Array<ImageData>} imageDataList - 已抽好的帧数据数组（每一项是 ImageData 对象）
- * @param {number} frameRate - 视频帧率（用于计算时间相关参数）
  * @param {Object} options - 配置项（默认适配多数场景）
  * @returns {Array} 循环边界数组，含循环起点/终点（帧索引+时间）、循环时长
  */
@@ -37,13 +36,13 @@ function detectCycle(
     ...options,
   };
 
-  const { hashDiffThreshold, consecutiveMatch, minCycleTime, logger } = config;
+  const { hashDiffThreshold, consecutiveMatch, minCycleTime, logger, frameRate } = config;
   const frameCount = imageDataList.length;
   const frameHashes: string[] = [];    // 存储每帧的dHash（轻量特征）
   const frameTimes: number[] = [];     // 存储每帧的时间戳（ms）
   const cycleBoundaries: CycleBoundary[] = [];// 最终循环边界结果
 
-  logger.log(`开始检测循环边界，总帧数: ${frameCount}, 帧率: ${FRAME_RATE}fps`);
+  logger.log(`开始检测循环边界，总帧数: ${frameCount}, 帧率: ${frameRate}fps`);
   logger.debug(`配置参数 - hashDiffThreshold: ${hashDiffThreshold}, consecutiveMatch: ${consecutiveMatch}, minCycleTime: ${minCycleTime}ms`);
 
   // 1. 预处理：计算所有帧的dHash和时间戳（核心轻量计算）
@@ -54,7 +53,7 @@ function detectCycle(
     const hash = calculateDHashFromImageData(imageData);
     frameHashes.push(hash);
     // 计算当前帧的时间戳（基于帧率）
-    frameTimes.push((i / FRAME_RATE) * 1000);
+    frameTimes.push((i / frameRate) * 1000);
   }
   logger.log(`帧哈希计算完成，共 ${frameHashes.length} 帧`);
 
@@ -96,7 +95,7 @@ function detectCycle(
       if (cycleBoundaries.some(b => i >= b.startFrame && i <= b.endFrame)) continue;
 
       // 潜在匹配起点：至少间隔“最小循环时长对应的帧数”（避免短重复误判）
-      const minMatchOffset = Math.max(consecutiveMatch, Math.ceil((minCycleTime / 1000) * FRAME_RATE));
+      const minMatchOffset = Math.max(consecutiveMatch, Math.ceil((minCycleTime / 1000) * frameRate));
       // 遍历后续可能的匹配终点起点
       for (let j = i + minMatchOffset; j < frameCount - consecutiveMatch; j++) {
         let matchCount = 0;
@@ -179,46 +178,22 @@ function detectCycle(
   return cycleBoundaries;
 }
 
-export { detectCycle };
-export type { DetectCycleOptions, CycleBoundary };
 
 export const cycleDetectProcessor: ImageProcessor = async (imageDataList, config) => {
-  const { logger } = config
+  const { logger, frameRate } = config
 
-  const cycleBoundaries = detectCycle(imageDataList, { logger })
+  const cycleBoundaries = detectCycle(imageDataList, { logger, frameRate })
   config.cycleBoundaries = cycleBoundaries
 
   if (cycleBoundaries.length > 0) {
-    const firstCycle = cycleBoundaries[0]
-    logger.log(`将使用第一个循环片段: 帧${firstCycle.startFrame}-${firstCycle.endFrame}`)
-    return imageDataList.slice(firstCycle.startFrame, firstCycle.endFrame + 1)
+    const largestCycle = cycleBoundaries.reduce((max, cur) =>
+      cur.cycleFrameCount > max.cycleFrameCount ? cur : max,
+      cycleBoundaries[0]
+    )
+    logger.log(`将使用最长的循环片段: 帧${largestCycle.startFrame}-${largestCycle.endFrame}，共 ${largestCycle.cycleFrameCount} 帧`)
+    return imageDataList.slice(largestCycle.startFrame, largestCycle.endFrame + 1)
   }
 
   logger.log('未检测到循环，使用全部帧')
   return imageDataList
 }
-
-// ------------------- 用法示例 -------------------
-// 假设你已获取：
-// 1. imageDataList：抽好的ImageData数组（比如从视频/Canvas中提取）
-// 2. frameRate：视频帧率（比如30fps）
-
-// 示例调用（直接传入已有数据）
-// const imageDataList = [imageData1, imageData2, ...]; // 你的帧数据数组
-// const frameRate = 30; // 你的视频帧率
-// const cycleBoundaries = detectCycle(imageDataList, {
-//   hashDiffThreshold: 2,    // 可根据帧噪声微调（噪声大就设3）
-//   consecutiveMatch: 3,     // 循环越规律，可设越小（如2）
-//   minCycleTime: 500        // 最小循环时长（避免1秒内的短重复）
-// });
-
-// 输出结果
-// console.log('检测到的循环边界：', cycleBoundaries);
-// if (cycleBoundaries.length) {
-//   const firstCycle = cycleBoundaries[0];
-//   console.log(`循环起点：第${firstCycle.startFrame}帧（${(firstCycle.startMs/1000).toFixed(1)}秒）`);
-//   console.log(`循环终点：第${firstCycle.endFrame}帧（${(firstCycle.endMs/1000).toFixed(1)}秒）`);
-//   console.log(`循环时长：${(firstCycle.cycleTime/1000).toFixed(1)}秒`);
-// } else {
-//   console.log('未检测到循环边界');
-// }
