@@ -1,4 +1,4 @@
-import type { Logger } from './Logger'
+import type { Logger } from '../Logger'
 
 export const extractFramesFromVideo = async (
   file: File,

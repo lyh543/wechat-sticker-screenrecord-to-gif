@@ -1,5 +1,5 @@
 import GIF from 'gif.js'
-import type { Logger } from './Logger'
+import type { Logger } from '../Logger'
 
 export const renderGifFromFrames = async (
   frames: ImageData[], 

@@ -1,12 +1,13 @@
 import { useState, useRef } from 'react'
 import './App.css'
-import { extractFramesFromVideo } from './videoToFrames'
-import { renderGifFromFrames } from './framesToGif'
+import { extractFramesFromVideo } from './imageProcessor/videoToFrames'
+import { renderGifFromFrames } from './imageProcessor/framesToGif'
 import { useLogger, LogViewer } from './Logger'
-import { detectBackgroundColor } from './colorDetection'
-import { replaceBackgroundInFrames } from './colorReplacement'
-import { detectCropRegion, cropFrames } from './imageCrop'
-import { detectCycle } from './detectCycle'
+import type { ProcessorConfig } from './imageProcessor/types'
+import { backgroundColorProcessor } from './imageProcessor/colorDetection'
+import { replaceBackgroundInFrames } from './imageProcessor/colorReplacement'
+import { cropProcessor } from './imageProcessor/imageCrop'
+import { cycleDetectProcessor } from './imageProcessor/detectCycle'
 
 function App() {
   const [converting, setConverting] = useState(false)
@@ -34,7 +35,7 @@ function App() {
     setConverting(true)
     setProgress(0)
 
-    logger.log('========== 开始转换 ==========')
+    logger.log('========== 开始转换 =========＝')
 
     try {
       // 提取视频帧
@@ -42,34 +43,32 @@ function App() {
       
       if (processedFrames.length == 0) {
         logger.log('❌ 视频中没有可用的帧')
-        logger.log('========== 转换结束 ==========')
+        logger.log('========== 转换结束 =========＝')
         resetState()
         return
       }
 
-      // 识别中间帧的底色
-      const middleIndex = Math.floor(processedFrames.length / 2)
-      logger.log(`使用第 ${middleIndex + 1} 帧（中间帧）进行底色识别`)
-      const backgroundColor = detectBackgroundColor(processedFrames[middleIndex], logger)
+      const config: ProcessorConfig = {
+        logger,
+        frameRate,
+        removeBackground,
+        cropTolerance,
+        fileName: file.name,
+        onProgress: setProgress,
+      }
+
+      // 底色识别
+      processedFrames = await backgroundColorProcessor(processedFrames, config)
       
       // 检测并裁剪有效区域
-      const cropRegion = await detectCropRegion(processedFrames, cropTolerance, logger)
-      processedFrames = await cropFrames(processedFrames, cropRegion, logger)
+      processedFrames = await cropProcessor(processedFrames, config)
 
-      // 检测循环边界
-      const cycleBoundaries = detectCycle(processedFrames, { logger })
-      
-      if (cycleBoundaries.length > 0) {
-        const firstCycle = cycleBoundaries[0]
-        logger.log(`将使用第一个循环片段: 帧${firstCycle.startFrame}-${firstCycle.endFrame}`)
-        processedFrames = processedFrames.slice(firstCycle.startFrame, firstCycle.endFrame + 1)
-      } else {
-        logger.log('未检测到循环，使用全部帧')
-      }
+      // 检测循环边界并截取循环段
+      processedFrames = await cycleDetectProcessor(processedFrames, config)
 
       // 根据用户选择决定是否将底色替换为透明色
       if (removeBackground) {
-        processedFrames = await replaceBackgroundInFrames(processedFrames, backgroundColor, logger)
+        processedFrames = await replaceBackgroundInFrames(processedFrames, config)
       } else {
         logger.log('跳过底色替换（用户选择保留背景）')
       }
@@ -77,7 +76,7 @@ function App() {
       // 生成 GIF
       await renderGifFromFrames(processedFrames, file.name, frameRate, setProgress, logger)
       
-      logger.log('========== 转换完成 ==========')
+      logger.log('========== 转换完成 =========＝')
       resetState()
     } catch (error) {
       console.error('转换失败:', error)
@@ -185,3 +184,4 @@ function App() {
 }
 
 export default App
+

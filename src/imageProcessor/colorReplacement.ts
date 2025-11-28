@@ -1,6 +1,6 @@
-import {  colorToString } from './colorDetection'
-import type { Color } from './colorDetection'
-import type { Logger } from './Logger'
+import { colorToString } from './colorDetection'
+import type { Color, ImageProcessor, ProcessorConfig } from './types'
+import type { Logger } from '../Logger'
 
 export const replaceColorWithTransparent = (
   imageData: ImageData,
@@ -37,11 +37,17 @@ export const replaceColorWithTransparent = (
   return new ImageData(data, width, height)
 }
 
-export const replaceBackgroundInFrames = async (
-  frames: ImageData[],
-  backgroundColor: Color,
-  logger: Logger
-): Promise<ImageData[]> => {
+export const replaceBackgroundInFrames: ImageProcessor = async (
+  frames,
+  config,
+) => {
+  const { logger, backgroundColor } = config as ProcessorConfig
+
+  if (!backgroundColor) {
+    logger.log('未检测到底色，跳过底色替换')
+    return frames
+  }
+
   const log = logger.log
   
   log(`开始将底色 ${colorToString(backgroundColor)} 替换为透明色...`)
@@ -73,3 +79,4 @@ export const replaceBackgroundInFrames = async (
   
   return processedFrames
 }
+

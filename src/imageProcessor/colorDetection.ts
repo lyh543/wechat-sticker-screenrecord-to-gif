@@ -1,11 +1,5 @@
-import type { Logger } from "./Logger"
-
-export interface Color {
-  r: number
-  g: number
-  b: number
-  a: number
-}
+import type { Logger } from "../Logger"
+import type { Color, ImageProcessor } from './types'
 
 export const colorToString = (color: Color): string => {
   return `rgba(${color.r}, ${color.g}, ${color.b}, ${color.a})`
@@ -114,4 +108,27 @@ export const detectBackgroundColor = (
   logger.log(`识别到底色: ${colorToString(backgroundColor)} (出现 ${maxCount}/${totalSamples} 次，占比 ${((maxCount / totalSamples) * 100).toFixed(2)}%)`)
   
   return backgroundColor
+}
+
+export const backgroundColorProcessor: ImageProcessor = async (imageDataList, config) => {
+  const { logger } = config
+
+  if (imageDataList.length === 0) {
+    logger.log('没有可用的帧用于底色识别')
+    return imageDataList
+  }
+
+  const defaultIndex = Math.floor(imageDataList.length / 2)
+  const sampleIndexRaw =
+    typeof config.backgroundSampleIndex === 'number'
+      ? config.backgroundSampleIndex
+      : defaultIndex
+  const sampleIndex = Math.min(Math.max(0, sampleIndexRaw), imageDataList.length - 1)
+
+  logger.log(`使用第 ${sampleIndex + 1} 帧（中间帧）进行底色识别`)
+
+  const backgroundColor = detectBackgroundColor(imageDataList[sampleIndex], logger)
+  config.backgroundColor = backgroundColor
+
+  return imageDataList
 }

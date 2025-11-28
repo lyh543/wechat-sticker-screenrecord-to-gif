@@ -1,5 +1,6 @@
-import { FRAME_RATE } from './constants';
-import type { Logger } from './Logger';
+import { FRAME_RATE } from '../constants';
+import type { Logger } from '../Logger';
+import type { ImageProcessor } from './types';
 
 interface DetectCycleOptions {
   hashDiffThreshold?: number;
@@ -180,6 +181,22 @@ function detectCycle(
 
 export { detectCycle };
 export type { DetectCycleOptions, CycleBoundary };
+
+export const cycleDetectProcessor: ImageProcessor = async (imageDataList, config) => {
+  const { logger } = config
+
+  const cycleBoundaries = detectCycle(imageDataList, { logger })
+  config.cycleBoundaries = cycleBoundaries
+
+  if (cycleBoundaries.length > 0) {
+    const firstCycle = cycleBoundaries[0]
+    logger.log(`将使用第一个循环片段: 帧${firstCycle.startFrame}-${firstCycle.endFrame}`)
+    return imageDataList.slice(firstCycle.startFrame, firstCycle.endFrame + 1)
+  }
+
+  logger.log('未检测到循环，使用全部帧')
+  return imageDataList
+}
 
 // ------------------- 用法示例 -------------------
 // 假设你已获取：

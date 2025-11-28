@@ -1,5 +1,5 @@
-import type { Color } from './colorDetection'
-import type { Logger } from './Logger'
+import type { Color, ImageProcessor, ProcessorConfig } from './types'
+import type { Logger } from '../Logger'
 
 export interface CropRegion {
   left: number
@@ -115,8 +115,8 @@ export const detectCropRegion = async (
   // 设置边框
   const borderLeft = 0
   const borderRight = 0
-  const borderTop = Math.floor(height / 8)
-  const borderBottom = Math.floor(height / 8)
+  const borderTop = Math.floor(height / 18)  // 1920px 高的视频，边框约 106px
+  const borderBottom = Math.floor(height / 18)
   
   logger.log(`边框设置: 上=${borderTop}px, 下=${borderBottom}px, 左=${borderLeft}px, 右=${borderRight}px`)
   logger.log('边框区域也将被裁剪')
@@ -284,5 +284,25 @@ export const cropFrames = async (
   
   logger.log(`裁剪完成`)
   
+  return croppedFrames
+}
+
+export const cropProcessor: ImageProcessor = async (frames, config) => {
+  const { logger } = config as ProcessorConfig
+
+  if (frames.length === 0) {
+    logger.log('没有可用的帧用于裁剪')
+    return frames
+  }
+
+  const tolerance =
+    typeof config.cropTolerance === 'number'
+      ? config.cropTolerance
+      : 0.02
+
+  const cropRegion = await detectCropRegion(frames, tolerance, logger)
+  config.cropRegion = cropRegion
+
+  const croppedFrames = await cropFrames(frames, cropRegion, logger)
   return croppedFrames
 }
