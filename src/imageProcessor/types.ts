@@ -32,19 +32,49 @@ export interface ProcessorConfig {
   /** 裁剪容差（0-1），用于裁剪处理器。 */
   cropTolerance: number
 
-  /** 自动检测到的裁剪区域。 */
-  cropRegion?: unknown
+  /** 裁剪器输出的裁剪区域。 */
+  cropRegion?: CropRegion
+
+  /** 裁剪边框比例（0-1），用于裁剪时，分别表示左右上下的初始比例。 */
+  borderLeftRatio: number
+  borderRightRatio: number
+  borderTopRatio: number
+  borderBottomRatio: number
 
   /** 循环检测得到的边界信息。 */
-  cycleBoundaries?: unknown
+  cycleBoundaries?: CycleBoundary[]
 
   /** 输出文件名（通常来自原视频文件名）。 */
   fileName: string
 
   /** 进度回调函数，一般由渲染 GIF 的处理器使用。 */
   onProgress: (progress: number) => void
+
+  /** 是否启用调试模式，调试模式下会输出更多日志信息。 */
+  debugMode: boolean
 }
 
 export interface ImageProcessor {
   (imageDataList: ImageData[], config: ProcessorConfig): Promise<ImageData[]>
 }
+export interface CropRegion {
+  left: number
+  top: number
+  width: number
+  height: number
+}export interface DetectCycleOptions {
+  frameRate: number;
+  hashDiffThreshold?: number;
+  consecutiveMatch?: number;
+  minCycleTime?: number;
+  logger: Logger;
+}
+export interface CycleBoundary {
+  startFrame: number;
+  endFrame: number;
+  startMs: number;
+  endMs: number;
+  cycleTime: number;
+  cycleFrameCount: number;
+}
+

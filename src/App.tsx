@@ -54,18 +54,23 @@ function App() {
         frameRate,
         removeBackground,
         cropTolerance,
+          borderLeftRatio: 0,
+          borderRightRatio: 0,
+          borderTopRatio: 0.055,
+          borderBottomRatio: 0.055,
         fileName: file.name,
         onProgress: setProgress,
+        debugMode,
       }
+
+      // 检测循环边界并截取循环段
+      processedFrames = await cycleDetectProcessor(processedFrames, config)
 
       // 底色识别
       processedFrames = await backgroundColorProcessor(processedFrames, config)
       
       // 检测并裁剪有效区域
       processedFrames = await cropProcessor(processedFrames, config)
-
-      // 检测循环边界并截取循环段
-      processedFrames = await cycleDetectProcessor(processedFrames, config)
 
       // 根据用户选择决定是否将底色替换为透明色
       if (removeBackground) {

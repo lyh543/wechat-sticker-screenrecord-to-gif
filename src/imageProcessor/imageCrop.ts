@@ -1,107 +1,99 @@
-import type { Color, ImageProcessor, ProcessorConfig } from './types'
+import type { Color, CropRegion, ImageProcessor, ProcessorConfig } from './types'
 import type { Logger } from '../Logger'
 
-export interface CropRegion {
-  left: number
-  top: number
-  width: number
-  height: number
-}
+const MAX_COLOR_DISTANCE = Math.sqrt(4 * 255 * 255)
 
-
-const isRowUniform = (frames: ImageData[], y: number, tolerance = 0.01): boolean => {
+const isRowUniform = (
+  frames: ImageData[],
+  y: number,
+  backgroundColor: Color | undefined,
+  tolerance = 0.01,
+  xStart = 0,
+  xEndExclusive?: number,
+): boolean => {
   if (frames.length === 0) return false
-  
+  if (!backgroundColor) return false
+
   const width = frames[0].width
-  
-  // 统计该行所有像素的颜色分布，找出主色调
-  const colorMap = new Map<string, { color: Color; count: number }>()
-  
+  const endX = typeof xEndExclusive === 'number' ? Math.min(xEndExclusive, width) : width
+  const startX = Math.max(0, xStart)
+
+  if (startX >= endX) return false
+
+  let sumSquaredDistance = 0
+  let totalPixels = 0
+
   for (const frame of frames) {
     const data = frame.data
-    for (let x = 0; x < width; x++) {
+    for (let x = startX; x < endX; x++) {
       const pixelIndex = (y * width + x) * 4
-      const color: Color = {
-        r: data[pixelIndex],
-        g: data[pixelIndex + 1],
-        b: data[pixelIndex + 2],
-        a: data[pixelIndex + 3]
-      }
-      const key = `${color.r},${color.g},${color.b},${color.a}`
-      const entry = colorMap.get(key)
-      if (entry) {
-        entry.count++
-      } else {
-        colorMap.set(key, { color, count: 1 })
-      }
+      const dr = data[pixelIndex] - backgroundColor.r
+      const dg = data[pixelIndex + 1] - backgroundColor.g
+      const db = data[pixelIndex + 2] - backgroundColor.b
+      const da = data[pixelIndex + 3] - backgroundColor.a
+      sumSquaredDistance += dr * dr + dg * dg + db * db + da * da
+      totalPixels++
     }
   }
-  
-  // 找到出现次数最多的颜色
-  let maxCount = 0
-  colorMap.forEach((entry) => {
-    if (entry.count > maxCount) {
-      maxCount = entry.count
-    }
-  })
-  
-  const totalPixels = width * frames.length
-  const ratio = 1 - (maxCount / totalPixels)
-  
-  // 如果主色调占比足够高（其他颜色占比小于容差），认为是纯色
-  return ratio <= tolerance
+
+  if (totalPixels === 0) return false
+
+  const meanDistance = Math.sqrt(sumSquaredDistance / totalPixels)
+  const normalizedDistance = meanDistance / MAX_COLOR_DISTANCE
+
+  return normalizedDistance <= tolerance
 }
 
-const isColumnUniform = (frames: ImageData[], x: number, tolerance = 0.01): boolean => {
+const isColumnUniform = (
+  frames: ImageData[],
+  x: number,
+  backgroundColor: Color | undefined,
+  tolerance = 0.01,
+  yStart = 0,
+  yEndExclusive?: number,
+): boolean => {
   if (frames.length === 0) return false
-  
+  if (!backgroundColor) return false
+
   const width = frames[0].width
   const height = frames[0].height
-  
-  // 统计该列所有像素的颜色分布，找出主色调
-  const colorMap = new Map<string, { color: Color; count: number }>()
-  
+  const endY = typeof yEndExclusive === 'number' ? Math.min(yEndExclusive, height) : height
+  const startY = Math.max(0, yStart)
+
+  if (startY >= endY) return false
+
+  let sumSquaredDistance = 0
+  let totalPixels = 0
+
   for (let frameIdx = 0; frameIdx < frames.length; frameIdx++) {
     const frame = frames[frameIdx]
     const data = frame.data
-    for (let y = 0; y < height; y++) {
+    for (let y = startY; y < endY; y++) {
       const pixelIndex = (y * width + x) * 4
-      const color: Color = {
-        r: data[pixelIndex],
-        g: data[pixelIndex + 1],
-        b: data[pixelIndex + 2],
-        a: data[pixelIndex + 3]
-      }
-      const key = `${color.r},${color.g},${color.b},${color.a}`
-      const entry = colorMap.get(key)
-      if (entry) {
-        entry.count++
-      } else {
-        colorMap.set(key, { color, count: 1 })
-      }
+      const dr = data[pixelIndex] - backgroundColor.r
+      const dg = data[pixelIndex + 1] - backgroundColor.g
+      const db = data[pixelIndex + 2] - backgroundColor.b
+      const da = data[pixelIndex + 3] - backgroundColor.a
+      sumSquaredDistance += dr * dr + dg * dg + db * db + da * da
+      totalPixels++
     }
   }
-  
-  // 找到出现次数最多的颜色
-  let maxCount = 0
-  colorMap.forEach((entry) => {
-    if (entry.count > maxCount) {
-      maxCount = entry.count
-    }
-  })
-  
-  const totalPixels = height * frames.length
-  const ratio = 1 - (maxCount / totalPixels)
-  
-  // 如果主色调占比足够高（其他颜色占比小于容差），认为是纯色
-  return ratio <= tolerance
+
+  if (totalPixels === 0) return false
+
+  const meanDistance = Math.sqrt(sumSquaredDistance / totalPixels)
+  const normalizedDistance = meanDistance / MAX_COLOR_DISTANCE
+
+  return normalizedDistance <= tolerance
 }
 
 export const detectCropRegion = async (
   frames: ImageData[],
   tolerance: number,
-  logger: Logger
+  config: ProcessorConfig,
 ): Promise<CropRegion> => {
+  const { logger, backgroundColor } = config
+
   if (frames.length === 0) {
     throw new Error('没有可用的帧')
   }
@@ -111,12 +103,11 @@ export const detectCropRegion = async (
   
   logger.log('开始检测可裁剪区域...')
   logger.log(`原始尺寸: ${width}x${height}`)
-  
-  // 设置边框
-  const borderLeft = 0
-  const borderRight = 0
-  const borderTop = Math.floor(height / 18)  // 1920px 高的视频，边框约 106px
-  const borderBottom = Math.floor(height / 18)
+
+  const borderLeft = Math.floor(width * config.borderLeftRatio)
+  const borderRight = Math.floor(width * config.borderRightRatio)
+  const borderTop = Math.floor(height * config.borderTopRatio)  // 1920px 高的视频，边框约 106px
+  const borderBottom = Math.floor(height * config.borderBottomRatio)
   
   logger.log(`边框设置: 上=${borderTop}px, 下=${borderBottom}px, 左=${borderLeft}px, 右=${borderRight}px`)
   logger.log('边框区域也将被裁剪')
@@ -127,54 +118,40 @@ export const detectCropRegion = async (
   let left = borderLeft
   logger.debug(`开始从左往右扫描 (从列 ${borderLeft} 到列 ${width - borderRight - 1})...`)
   
-  // 先输出前几列的颜色统计
-  for (let x = 0; x < Math.min(3, width); x++) {
-    const colorMap = new Map<string, number>()
-    for (const frame of frames) {
-      const data = frame.data
-      for (let y = 0; y < height; y++) {
-        const pixelIndex = (y * width + x) * 4
-        const color = `rgba(${data[pixelIndex]}, ${data[pixelIndex + 1]}, ${data[pixelIndex + 2]}, ${data[pixelIndex + 3]})`
-        colorMap.set(color, (colorMap.get(color) || 0) + 1)
-      }
-    }
-    const totalPixels = height * frames.length
-    const colorCount = colorMap.size
-    const topColor = Array.from(colorMap.entries()).sort((a, b) => b[1] - a[1])[0]
-    logger.debug(`  列 ${x} 颜色统计: 共 ${colorCount} 种颜色, 最多的是 ${topColor[0]} 出现 ${topColor[1]}/${totalPixels} 次`)
-    await logger.yield()
-  }
-  
   for (let x = borderLeft; x < width - borderRight; x++) {
-    const uniform = isColumnUniform(frames, x, tolerance)
+    const uniform = isColumnUniform(frames, x, backgroundColor, tolerance, borderTop, height - borderBottom)
     if (x < 3) {
-      // 添加详细调试
-      let samePixels = 0
-      let totalPx = 0
-      const firstFrame = frames[0]
-      const firstPixelIndex = (0 * width + x) * 4
-      const refR = firstFrame.data[firstPixelIndex]
-      const refG = firstFrame.data[firstPixelIndex + 1]
-      const refB = firstFrame.data[firstPixelIndex + 2]
-      const refA = firstFrame.data[firstPixelIndex + 3]
-      
-      for (let frameIdx = 0; frameIdx < frames.length; frameIdx++) {
-        const frame = frames[frameIdx]
-        const data = frame.data
-        for (let y = 0; y < height; y++) {
-          totalPx++
-          const pixelIndex = (y * width + x) * 4
-          if (data[pixelIndex] === refR &&
-              data[pixelIndex + 1] === refG &&
-              data[pixelIndex + 2] === refB &&
-              data[pixelIndex + 3] === refA) {
-            samePixels++
+      // 添加详细调试：基于到背景色的平均欧氏距离
+      if (!backgroundColor) {
+        logger.debug(`  列 ${x}: 无背景色信息，无法计算距离，统一按有内容处理`)
+      } else {
+        let sumSquaredDistance = 0
+        let totalPx = 0
+        for (let frameIdx = 0; frameIdx < frames.length; frameIdx++) {
+          const frame = frames[frameIdx]
+          const data = frame.data
+          for (let y = borderTop; y < height - borderBottom; y++) {
+            const pixelIndex = (y * width + x) * 4
+            const dr = data[pixelIndex] - backgroundColor.r
+            const dg = data[pixelIndex + 1] - backgroundColor.g
+            const db = data[pixelIndex + 2] - backgroundColor.b
+            const da = data[pixelIndex + 3] - backgroundColor.a
+            const curDistSquare = dr * dr + dg * dg + db * db + da * da
+            if (curDistSquare > 1) {
+            logger.debug(`    帧 ${frameIdx}, 像素 (${x}, ${y}): dr=${dr}, dg=${dg}, db=${db}, da=${da}， 距离平方=${curDistSquare}`)
+            }
+            sumSquaredDistance += curDistSquare
+            totalPx++
           }
         }
+        if (totalPx > 0) {
+          const meanDistance = Math.sqrt(sumSquaredDistance / totalPx)
+          const normalizedDistance = meanDistance / MAX_COLOR_DISTANCE
+          logger.debug(
+            `  列 ${x}: ${uniform ? '背景色' : '有内容'} (平均距离=${meanDistance.toFixed(2)}, 归一化=${normalizedDistance.toFixed(4)}, 容差=${tolerance.toFixed(2)})`,
+          )
+        }
       }
-      const diffPx = totalPx - samePixels
-      const ratio = diffPx / totalPx
-      logger.debug(`  列 ${x}: ${uniform ? '纯色' : '有内容'} (参考色: rgba(${refR},${refG},${refB},${refA}), 不同像素: ${diffPx}/${totalPx}, 比例: ${(ratio * 100).toFixed(4)}%, 容差: ${(tolerance * 100).toFixed(2)}%, 判定: ${ratio <= tolerance ? '✓通过' : '✗不通过'})`)
     }
     if (!uniform) {
       left = x
@@ -188,29 +165,11 @@ export const detectCropRegion = async (
   let right = width - 1 - borderRight
   logger.debug(`开始从右往左扫描 (从列 ${width - 1 - borderRight} 到列 ${borderLeft})...`)
   for (let x = width - 1 - borderRight; x >= borderLeft; x--) {
-    const uniform = isColumnUniform(frames, x, tolerance)
+    const uniform = isColumnUniform(frames, x, backgroundColor, tolerance, borderTop, height - borderBottom)
     if (!uniform) {
       right = x
       await logger.yield()
-      // 额外调试：检查右边界附近的列
-      logger.debug(`  检查右边界附近的列...`)
-      for (let debugX = right - 2; debugX <= Math.min(right + 2, width - 1); debugX++) {
-        const colorMap = new Map<string, number>()
-        for (const frame of frames) {
-          const data = frame.data
-          for (let y = 0; y < height; y++) {
-            const pixelIndex = (y * width + debugX) * 4
-            const color = `rgba(${data[pixelIndex]}, ${data[pixelIndex + 1]}, ${data[pixelIndex + 2]}, ${data[pixelIndex + 3]})`
-            colorMap.set(color, (colorMap.get(color) || 0) + 1)
-          }
-        }
-        const totalPixels = height * frames.length
-        const colorCount = colorMap.size
-        const topColor = Array.from(colorMap.entries()).sort((a, b) => b[1] - a[1])[0]
-        const topRatio = topColor[1] / totalPixels
-        logger.debug(`    列 ${debugX}: ${colorCount} 种颜色, 主色调 ${topColor[0]} 占比 ${(topRatio * 100).toFixed(2)}%, 非主色调 ${((1-topRatio) * 100).toFixed(2)}%`)
-      }
-      
+  
       break
     }
   }
@@ -218,7 +177,7 @@ export const detectCropRegion = async (
   // 从上往下找第一行不可裁剪的行（从边框之后开始）
   let top = borderTop
   for (let y = borderTop; y < height - borderBottom; y++) {
-    if (!isRowUniform(frames, y)) {
+    if (!isRowUniform(frames, y, backgroundColor, tolerance, left, right + 1)) {
       top = y
       break
     }
@@ -227,7 +186,7 @@ export const detectCropRegion = async (
   // 从下往上找第一行不可裁剪的行（到边框之前结束）
   let bottom = height - 1 - borderBottom
   for (let y = height - 1 - borderBottom; y >= borderTop; y--) {
-    if (!isRowUniform(frames, y)) {
+    if (!isRowUniform(frames, y, backgroundColor, tolerance, left, right + 1)) {
       bottom = y
       break
     }
@@ -288,7 +247,7 @@ export const cropFrames = async (
 }
 
 export const cropProcessor: ImageProcessor = async (frames, config) => {
-  const { logger } = config as ProcessorConfig
+  const { logger } = config
 
   if (frames.length === 0) {
     logger.log('没有可用的帧用于裁剪')
@@ -300,7 +259,7 @@ export const cropProcessor: ImageProcessor = async (frames, config) => {
       ? config.cropTolerance
       : 0.02
 
-  const cropRegion = await detectCropRegion(frames, tolerance, logger)
+  const cropRegion = await detectCropRegion(frames, tolerance, config)
   config.cropRegion = cropRegion
 
   const croppedFrames = await cropFrames(frames, cropRegion, logger)

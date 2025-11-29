@@ -17,3 +17,9 @@ pnpm dev
 ```bash
 pnpm build
 ```
+
+## 部署到 [wechat-stickers.lyh543.cn](https://wechat-stickers.lyh543.cn)
+
+```bash
+bash ./publish.sh
+```

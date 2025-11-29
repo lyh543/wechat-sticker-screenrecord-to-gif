@@ -1,22 +1,4 @@
-import type { Logger } from '../Logger';
-import type { ImageProcessor } from './types';
-
-interface DetectCycleOptions {
-  frameRate: number;
-  hashDiffThreshold?: number;
-  consecutiveMatch?: number;
-  minCycleTime?: number;
-  logger: Logger;
-}
-
-interface CycleBoundary {
-  startFrame: number;
-  endFrame: number;
-  startMs: number;
-  endMs: number;
-  cycleTime: number;
-  cycleFrameCount: number;
-}
+import type { CycleBoundary, DetectCycleOptions, ImageProcessor } from './types';
 
 /**
  * 基于 ImageData 数组的循环边界检测（轻量版，无依赖）
