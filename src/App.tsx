@@ -172,6 +172,17 @@ function App() {
       </div>
 
       <LogViewer logs={logs} />
+
+      <div className="mt-8 text-sm text-gray-500 flex justify-center">
+        <a
+          href="https://github.com/lyh543/wechat-sticker-screenrecord-to-gif"
+          target="_blank"
+          rel="noreferrer"
+          className="hover:underline"
+        >
+          在 GitHub 查看源码
+        </a>
+      </div>
     </div>
   )
 }
