@@ -139,6 +139,21 @@ function detectCycle(
       }
     }
 
+    // 3. 验证存在两段完整且相似的循环（要求所有帧连续循环两次）
+    const secondCycleStart = matchIdx;
+    const secondCycleEnd = secondCycleStart + cycleFrameCount - 1;
+    if (secondCycleEnd >= frameCount) {
+      logger.debug(`✗ 不满足两段完整循环: 需要到帧${secondCycleEnd}，但总帧数为${frameCount}`);
+      return false;
+    }
+    for (let k = 0; k < cycleFrameCount; k++) {
+      const diff = calculateHashDiff(frameHashes[startIdx + k], frameHashes[secondCycleStart + k]);
+      if (diff > hashDiffThreshold) {
+        logger.debug(`✗ 第二段循环与第一段不一致: 帧${startIdx + k} vs ${secondCycleStart + k} 差异${diff} > ${hashDiffThreshold}`);
+        return false;
+      }
+    }
+
     return true;
   }
 

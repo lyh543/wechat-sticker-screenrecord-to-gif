@@ -254,12 +254,7 @@ export const cropProcessor: ImageProcessor = async (frames, config) => {
     return frames
   }
 
-  const tolerance =
-    typeof config.cropTolerance === 'number'
-      ? config.cropTolerance
-      : 0.02
-
-  const cropRegion = await detectCropRegion(frames, tolerance, config)
+  const cropRegion = await detectCropRegion(frames, config.cropTolerance, config)
   config.cropRegion = cropRegion
 
   const croppedFrames = await cropFrames(frames, cropRegion, logger)
