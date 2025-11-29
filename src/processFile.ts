@@ -5,6 +5,7 @@ import { backgroundColorProcessor } from './imageProcessor/colorDetection'
 import { replaceBackgroundInFrames } from './imageProcessor/colorReplacement'
 import { cropProcessor } from './imageProcessor/imageCrop'
 import { cycleDetectProcessor } from './imageProcessor/detectCycle'
+import { frameRateDetectProcessor } from './imageProcessor/frameRateDetect'
 
 export interface HandleFileSelectDependencies {
   setConverting: (value: boolean) => void
@@ -36,8 +37,12 @@ export const processFile = async (
       return
     }
 
+
     // 检测循环边界并截取循环段
     processedFrames = await cycleDetectProcessor(processedFrames, config)
+
+    // 尝试识别表情包实际帧率
+    processedFrames = await frameRateDetectProcessor(processedFrames, config)
 
     // 底色识别
     processedFrames = await backgroundColorProcessor(processedFrames, config)

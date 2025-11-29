@@ -110,7 +110,7 @@ function App() {
           <input
             type="range"
             min="5"
-            max="30"
+            max="60"
             step="1"
             value={frameRate}
             onChange={(e) => setFrameRate(parseInt(e.target.value))}

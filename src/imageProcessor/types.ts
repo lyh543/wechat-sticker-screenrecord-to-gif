@@ -20,6 +20,9 @@ export interface ProcessorConfig {
   /** 原始视频的帧率（fps）。 */
   frameRate: number
 
+  /** 自动识别出的表情包实际帧率（fps）。 */
+  detectedFrameRate?: number
+
   /** 是否在后续步骤中移除背景。 */
   removeBackground: boolean
 

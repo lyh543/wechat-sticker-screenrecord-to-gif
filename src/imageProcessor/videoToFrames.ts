@@ -1,5 +1,7 @@
 import type { ProcessorConfig } from './types'
 
+const LOG_INTERVAL = 10
+
 export const extractFramesFromVideo = async (
   config: ProcessorConfig
 ): Promise<ImageData[]> => {
@@ -49,7 +51,7 @@ export const extractFramesFromVideo = async (
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       extractedFrames.push(imageData)
       
-      if ((i + 1) % 10 === 0 || i === frameCount - 1) {
+      if ((i + 1) % LOG_INTERVAL === 0 || i === frameCount - 1) {
         log(`已提取 ${i + 1}/${frameCount} 帧`)
       }
     }

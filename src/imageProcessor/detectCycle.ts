@@ -191,6 +191,7 @@ export const cycleDetectProcessor: ImageProcessor = async (imageDataList, config
     return imageDataList.slice(largestCycle.startFrame, largestCycle.endFrame + 1)
   }
 
-  logger.log('未检测到循环，使用全部帧')
+  logger.log('未检测到循环，使用全部帧！！！！！')
+  logger.log('提示：可以尝试录制更长的视频以提高循环检测成功率')
   return imageDataList
 }

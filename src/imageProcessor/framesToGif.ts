@@ -1,6 +1,8 @@
 import GIF from 'gif.js'
 import type { ProcessorConfig } from './types'
 
+const LOG_INTERVAL = 50
+
 export const renderGifFromFrames = async (
   frames: ImageData[],
   config: ProcessorConfig,
@@ -43,7 +45,7 @@ export const renderGifFromFrames = async (
     ctx.putImageData(imageData, 0, 0)
     gif.addFrame(canvas, { copy: true, delay: 1000 / frameRate })
     
-    if ((index + 1) % 20 === 0 || index === frames.length - 1) {
+    if ((index + 1) % LOG_INTERVAL === 0 || index === frames.length - 1) {
       log(`已添加 ${index + 1}/${frames.length} 帧`)
     }
   })
