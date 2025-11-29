@@ -13,7 +13,7 @@ function App() {
   const [debugMode = false, setDebugMode] = useLocalStorage<boolean>('wechat-sticker-gif-debugMode') // 调试模式，默认关闭
   const [frameRate = 5, setFrameRate] = useLocalStorage<number>('wechat-sticker-gif-frameRate') // 帧率，默认 15 fps
   const fileInputRef = useRef<HTMLInputElement>(null)
-  const { logs, logger } = useLogger(debugMode)
+  const { logs, logger, clearLogs } = useLogger(debugMode)
 
   const resetState = useCallback(() => {
     setConverting(false)
@@ -153,6 +153,25 @@ function App() {
         </label>
       </div>
       
+      <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
+        <button
+          onClick={clearLogs}
+          disabled={logs.length === 0 || converting}
+          style={{
+            padding: '6px 16px',
+            fontSize: '12px',
+            cursor: logs.length === 0 || converting ? 'not-allowed' : 'pointer',
+            backgroundColor: logs.length === 0 || converting ? '#ddd' : '#f5a623',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '6px',
+            opacity: logs.length === 0 || converting ? 0.7 : 1,
+          }}
+        >
+          清除日志
+        </button>
+      </div>
+
       <LogViewer logs={logs} />
     </div>
   )
