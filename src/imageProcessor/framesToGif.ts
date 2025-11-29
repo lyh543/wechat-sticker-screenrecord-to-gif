@@ -1,13 +1,11 @@
 import GIF from 'gif.js'
-import type { Logger } from '../Logger'
+import type { ProcessorConfig } from './types'
 
 export const renderGifFromFrames = async (
-  frames: ImageData[], 
-  fileName: string,
-  frameRate: number,
-  onProgress: (progress: number) => void,
-  logger: Logger
+  frames: ImageData[],
+  config: ProcessorConfig,
 ): Promise<void> => {
+  const { fileName, frameRate, onProgress, logger } = config
   const log = logger.log
   
   if (frames.length === 0) {

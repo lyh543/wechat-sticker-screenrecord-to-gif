@@ -47,6 +47,9 @@ export interface ProcessorConfig {
   /** 输出文件名（通常来自原视频文件名）。 */
   fileName: string
 
+  /** 源视频文件对象。 */
+  file: File
+
   /** 进度回调函数，一般由渲染 GIF 的处理器使用。 */
   onProgress: (progress: number) => void
 

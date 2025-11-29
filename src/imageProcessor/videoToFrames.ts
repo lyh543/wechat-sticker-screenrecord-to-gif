@@ -1,10 +1,9 @@
-import type { Logger } from '../Logger'
+import type { ProcessorConfig } from './types'
 
 export const extractFramesFromVideo = async (
-  file: File,
-  frameRate: number,
-  logger: Logger
+  config: ProcessorConfig
 ): Promise<ImageData[]> => {
+  const { file, frameRate, logger } = config
   const log = logger.log
   
   log(`开始处理视频文件: ${file.name}`)

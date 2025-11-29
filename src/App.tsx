@@ -1,8 +1,9 @@
-import { useState, useRef } from 'react'
+import { useState, useRef, useCallback, type ChangeEvent } from 'react'
 import { useLocalStorage } from 'react-use'
 import './App.css'
 import { useLogger, LogViewer } from './Logger'
-import { createHandleFileSelect } from './handleFileSelect'
+import { processFile } from './processFile'
+import type { ProcessorConfig } from './imageProcessor/types'
 
 function App() {
   const [converting, setConverting] = useState(false)
@@ -14,24 +15,51 @@ function App() {
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { logs, logger } = useLogger(debugMode)
 
-  const resetState = () => {
+  const resetState = useCallback(() => {
     setConverting(false)
     setProgress(0)
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-  }
+  }, [])
 
-  const handleFileSelect = createHandleFileSelect({
-    logger,
-    setConverting,
-    setProgress,
-    frameRate,
-    removeBackground,
-    cropTolerance,
-    debugMode,
-    resetState,
-  })
+  const handleFileSelect = useCallback(
+    (e: ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0]
+      if (!file) return
+
+      const config: ProcessorConfig = {
+        logger,
+        frameRate,
+        removeBackground,
+        cropTolerance,
+        borderLeftRatio: 0,
+        borderRightRatio: 0,
+        borderTopRatio: 0.055,
+        borderBottomRatio: 0.055,
+        fileName: file.name,
+        onProgress: setProgress,
+        debugMode,
+        file,
+      }
+
+      processFile(config, {
+        setConverting,
+        setProgress,
+        resetState,
+      })
+    },
+    [
+      logger,
+      frameRate,
+      removeBackground,
+      cropTolerance,
+      debugMode,
+      setProgress,
+      setConverting,
+      resetState,
+    ],
+  )
 
 
   return (
