@@ -1,6 +1,5 @@
 import { useState, useRef, useCallback, type ChangeEvent } from 'react'
 import { useLocalStorage } from 'react-use'
-import './App.css'
 import { useLogger, LogViewer } from './Logger'
 import { processFile } from './processFile'
 import type { ProcessorConfig } from './imageProcessor/types'
@@ -63,10 +62,10 @@ function App() {
 
 
   return (
-    <div style={{ padding: '40px', textAlign: 'center', maxWidth: '1200px', margin: '0 auto' }}>
-      <h1>微信表情包录屏转 GIF</h1>
+    <div className="max-w-5xl mx-auto p-10 text-center">
+      <h1 className="text-5xl font-semibold">微信表情包录屏转 GIF</h1>
       
-      <div style={{ marginTop: '30px', marginBottom: '20px', display: 'flex', flexDirection: 'column', gap: '15px', alignItems: 'center' }}>
+      <div className="mt-8 mb-5 flex flex-col gap-4 items-center">
         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
           <input
             type="checkbox"
@@ -87,7 +86,7 @@ function App() {
           <span>调试模式（显示详细日志）</span>
         </label>
         
-        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+        <label className="flex items-center justify-center gap-2">
           <span>裁剪容差:</span>
           <input
             type="range"
@@ -99,13 +98,13 @@ function App() {
             disabled={converting}
             style={{ width: '200px' }}
           />
-          <span style={{ minWidth: '60px', fontWeight: 'bold' }}>{(cropTolerance * 100).toFixed(1)}%</span>
+          <span className="min-w-[60px] font-bold">{(cropTolerance * 100).toFixed(1)}%</span>
         </label>
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '-5px' }}>
+        <div className="text-xs text-gray-500 -mt-1">
           容差越大，裁剪越激进（可能裁掉更多边缘）
         </div>
         
-        <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
+        <label className="flex items-center justify-center gap-2">
           <span>帧率:</span>
           <input
             type="range"
@@ -117,14 +116,14 @@ function App() {
             disabled={converting}
             style={{ width: '200px' }}
           />
-          <span style={{ minWidth: '60px', fontWeight: 'bold' }}>{frameRate} fps</span>
+          <span className="min-w-[60px] font-bold">{frameRate} fps</span>
         </label>
-        <div style={{ fontSize: '12px', color: '#666', marginTop: '-5px' }}>
+        <div className="text-xs text-gray-500 -mt-1">
           帧率越高，动画越流畅，但文件越大、生成越慢。推荐 10-15fps
         </div>
       </div>
       
-      <div style={{ marginTop: '40px' }}>
+      <div className="mt-10">
         <input
           ref={fileInputRef}
           type="file"

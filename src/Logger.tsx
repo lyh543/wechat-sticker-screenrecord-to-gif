@@ -53,26 +53,14 @@ interface LogViewerProps {
 
 export const LogViewer = ({ logs }: LogViewerProps) => {
   return (
-    <div style={{
-      marginTop: '20px',
-      padding: '16px',
-      backgroundColor: '#ffffff',
-      border: '1px solid #e0e0e0',
-      borderRadius: '8px',
-      width: '100%',
-      height: '400px',
-      overflowY: 'auto',
-      fontFamily: 'monospace',
-      fontSize: '12px',
-      textAlign: 'left',
-      boxSizing: 'border-box'
-    }}>
+    <div className="mt-5 w-full h-96 overflow-y-auto rounded-lg border border-gray-200 bg-white p-4 font-mono text-xs text-left"
+    >
       {logs.length === 0 ? (
-        <div style={{ color: '#999' }}>暂无日志</div>
+        <div className="text-gray-400">暂无日志</div>
       ) : (
         logs.map((entry, index) => (
-          <div key={index} style={{ marginBottom: '4px', color: '#333' }}>
-            <span style={{ color: '#666' }}>[{entry.timestamp}]</span>{' '}
+          <div key={index} className="mb-1 text-gray-800">
+            <span className="text-gray-500">[{entry.timestamp}]</span>{' '}
             <span>{entry.message}</span>
           </div>
         ))
