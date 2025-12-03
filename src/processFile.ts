@@ -6,6 +6,7 @@ import { replaceBackgroundInFrames } from './imageProcessor/colorReplacement'
 import { cropProcessor } from './imageProcessor/imageCrop'
 import { cycleDetectProcessor } from './imageProcessor/detectCycle'
 import { frameRateDetectProcessor } from './imageProcessor/frameRateDetect'
+import { resizeProcessor } from './imageProcessor/imageResize'
 
 export interface HandleFileSelectDependencies {
   setConverting: (value: boolean) => void
@@ -49,6 +50,9 @@ export const processFile = async (
     
     // 检测并裁剪有效区域
     processedFrames = await cropProcessor(processedFrames, config)
+
+    // 缩放图片到目标尺寸
+    processedFrames = await resizeProcessor(processedFrames, config)
 
     // 根据用户选择决定是否将底色替换为透明色
     if (removeBackground) {

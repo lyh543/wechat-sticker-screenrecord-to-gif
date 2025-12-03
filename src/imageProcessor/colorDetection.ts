@@ -15,7 +15,6 @@ export const detectBackgroundColor = (
   const data = imageData.data
   
   logger.log('开始识别底色...')
-  logger.log(`图片尺寸: ${width}x${height}`)
   
   const colorMap = new Map<string, { color: Color; count: number }>()
   

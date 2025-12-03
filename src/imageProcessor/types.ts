@@ -58,6 +58,9 @@ export interface ProcessorConfig {
 
   /** 是否启用调试模式，调试模式下会输出更多日志信息。 */
   debugMode: boolean
+
+  /** 目标最大尺寸（像素），图片会按比例缩放使宽高的较大值不超过此值。 */
+  targetSize: number
 }
 
 export interface ImageProcessor {

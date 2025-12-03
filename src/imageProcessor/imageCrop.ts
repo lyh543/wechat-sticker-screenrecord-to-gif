@@ -109,9 +109,7 @@ export const detectCropRegion = async (
   const borderTop = Math.floor(height * config.borderTopRatio)  // 1920px 高的视频，边框约 106px
   const borderBottom = Math.floor(height * config.borderBottomRatio)
   
-  logger.log(`边框设置: 上=${borderTop}px, 下=${borderBottom}px, 左=${borderLeft}px, 右=${borderRight}px`)
-  logger.log('边框区域也将被裁剪')
-  logger.log(`容差设置: ${(tolerance * 100).toFixed(2)}% (tolerance=${tolerance})`)
+  logger.log(`边框设置: 上=${borderTop}px, 下=${borderBottom}px, 左=${borderLeft}px, 右=${borderRight}px；容差设置: ${(tolerance * 100).toFixed(2)}% (tolerance=${tolerance})`)
   await logger.yield()
   
   // 从左往右找第一列不可裁剪的列（从边框之后开始）
@@ -198,12 +196,10 @@ export const detectCropRegion = async (
     width: right - left + 1,
     height: bottom - top + 1
   }
+  const savedPercentage = (100 - (cropRegion.width * cropRegion.height) / (width * height) * 100).toFixed(2)
   
   logger.log(`检测到有效区域: left=${left}, top=${top}, width=${cropRegion.width}, height=${cropRegion.height}`)
-  logger.log(`裁剪后尺寸: ${cropRegion.width}x${cropRegion.height}`)
-  
-  const savedPercentage = (100 - (cropRegion.width * cropRegion.height) / (width * height) * 100).toFixed(2)
-  logger.log(`节省空间: ${savedPercentage}%`)
+  logger.log(`裁剪后尺寸: ${cropRegion.width}x${cropRegion.height}，节省空间: ${savedPercentage}%`)
   
   return cropRegion
 }

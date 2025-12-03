@@ -28,7 +28,7 @@ function detectCycle(
   logger.debug(`配置参数 - hashDiffThreshold: ${hashDiffThreshold}, consecutiveMatch: ${consecutiveMatch}, minCycleTime: ${minCycleTime}ms`);
 
   // 1. 预处理：计算所有帧的dHash和时间戳（核心轻量计算）
-  logger.log('开始计算帧哈希...');
+  logger.debug('开始计算帧哈希...');
   for (let i = 0; i < frameCount; i++) {
     const imageData = imageDataList[i];
     // 计算当前帧的dHash（10ms内完成单帧，比像素对比快10倍+）
@@ -37,7 +37,7 @@ function detectCycle(
     // 计算当前帧的时间戳（基于帧率）
     frameTimes.push((i / frameRate) * 1000);
   }
-  logger.log(`帧哈希计算完成，共 ${frameHashes.length} 帧`);
+  logger.debug(`帧哈希计算完成，共 ${frameHashes.length} 帧`);
 
   // 2. 计算dHash（差异哈希，适配ImageData，无Canvas依赖）
   function calculateDHashFromImageData(imageData: ImageData): string {
@@ -70,7 +70,7 @@ function detectCycle(
 
   // 3. 对比哈希，筛选循环边界（核心匹配逻辑）
   function findCycleBoundaries(): void {
-    logger.log('开始查找循环边界...');
+    logger.debug('开始查找循环边界...');
     // 遍历每帧，作为潜在循环起点
     for (let i = 0; i < frameCount - consecutiveMatch; i++) {
       // 跳过已认定为循环区间内的帧（避免重复检测）

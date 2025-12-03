@@ -7,13 +7,17 @@ import type { ProcessorConfig } from './imageProcessor/types'
 function App() {
   const [converting, setConverting] = useState(false)
   const [progress, setProgress] = useState(0)
-  const [cropTolerance = 0.02, setCropTolerance] = useLocalStorage<number>('wechat-sticker-gif-cropTolerance') // 裁剪容差，默认 2%
+  const [cropTolerance = 0.02, ] = useLocalStorage<number>('wechat-sticker-gif-cropTolerance') // 裁剪容差，默认 2%
   const [removeBackground = false, setRemoveBackground] = useLocalStorage<boolean>('wechat-sticker-gif-removeBackground') // 是否去除背景，默认关闭
   const [debugMode = false, setDebugMode] = useLocalStorage<boolean>('wechat-sticker-gif-debugMode') // 调试模式，默认关闭
   const [frameRate = 5, setFrameRate] = useLocalStorage<number>('wechat-sticker-gif-frameRate') // 帧率，默认 15 fps
+  const [targetSizeSlider = 6, setTargetSizeSlider] = useLocalStorage<number>('wechat-sticker-gif-targetSizeSlider') // 目标尺寸滑块值，默认 6 对应 300px
   const fileInputRef = useRef<HTMLInputElement>(null)
   const { logs, logger, clearLogs } = useLogger(debugMode)
 
+  // 计算实际的 targetSize 值：slider 1-16 对应 50-800，slider 17 对应不压缩（0）
+  const targetSize = targetSizeSlider <= 16 ? targetSizeSlider * 50 : 0
+  
   const resetState = useCallback(() => {
     setConverting(false)
     setProgress(0)
@@ -40,6 +44,7 @@ function App() {
         onProgress: setProgress,
         debugMode,
         file,
+        targetSize,
       }
 
       processFile(config, {
@@ -54,6 +59,7 @@ function App() {
       removeBackground,
       cropTolerance,
       debugMode,
+      targetSize,
       setProgress,
       setConverting,
       resetState,
@@ -86,7 +92,8 @@ function App() {
           <span>调试模式（显示详细日志）</span>
         </label>
         
-        <label className="flex items-center justify-center gap-2">
+        {/* 不常用，注释掉 */}
+        {/* <label className="flex items-center justify-center gap-2">
           <span>裁剪容差:</span>
           <input
             type="range"
@@ -102,7 +109,7 @@ function App() {
         </label>
         <div className="text-xs text-gray-500 -mt-1">
           容差越大，裁剪越激进（可能裁掉更多边缘）
-        </div>
+        </div> */}
         
         <label className="flex items-center justify-center gap-2">
           <span>帧率:</span>
@@ -120,6 +127,24 @@ function App() {
         </label>
         <div className="text-xs text-gray-500 -mt-1">
           帧率越高，动画越流畅，但文件越大、生成越慢。推荐 10-15fps
+        </div>
+        
+        <label className="flex items-center justify-center gap-2">
+          <span>目标尺寸:</span>
+          <input
+            type="range"
+            min="1"
+            max="17"
+            step="1"
+            value={targetSizeSlider}
+            onChange={(e) => setTargetSizeSlider(parseInt(e.target.value))}
+            disabled={converting}
+            style={{ width: '200px' }}
+          />
+          <span className="min-w-[80px] font-bold">{targetSize === 0 ? '不压缩' : `${targetSize}px`}</span>
+        </label>
+        <div className="text-xs text-gray-500 -mt-1">
+          图片会按比例缩放，使宽高的较大值不超过此尺寸。推荐 200-400px
         </div>
       </div>
       

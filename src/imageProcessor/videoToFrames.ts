@@ -1,5 +1,12 @@
 import type { ProcessorConfig } from './types'
 
+declare global {
+  interface Window {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    error_info?: any
+  }
+}
+
 const LOG_INTERVAL = 10
 
 export const extractFramesFromVideo = async (
@@ -20,7 +27,16 @@ export const extractFramesFromVideo = async (
     log('加载视频元数据...')
     await new Promise((resolve, reject) => {
       video.onloadedmetadata = resolve
-      video.onerror = () => reject(new Error('视频加载失败'))
+        video.onerror = (event, source, lineno,colno ,error) => {  
+        window.error_info = {
+          event,
+          source,
+          lineno,
+          colno,
+          error
+        }
+        reject(new Error(`视频加载失败：${error}`))
+      }
     })
 
     log(`视频尺寸: ${video.videoWidth}x${video.videoHeight}, 时长: ${video.duration.toFixed(2)}s`)
@@ -44,7 +60,16 @@ export const extractFramesFromVideo = async (
       video.currentTime = i / frameRate
       await new Promise((resolve, reject) => {
         video.onseeked = resolve
-        video.onerror = () => reject(new Error('视频帧读取失败'))
+        video.onerror = (event, source, lineno,colno ,error) => {  
+        window.error_info = {
+          event,
+          source,
+          lineno,
+          colno,
+          error
+        }
+        reject(new Error(`视频帧读取失败：${event}`))
+      }
       })
       
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
