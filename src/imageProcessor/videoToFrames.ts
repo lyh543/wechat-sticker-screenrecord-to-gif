@@ -12,8 +12,10 @@ const LOG_INTERVAL = 10
 export const extractFramesFromVideo = async (
   config: ProcessorConfig
 ): Promise<ImageData[]> => {
-  const { file, frameRate, logger } = config
+  const { file, frameRate, logger, progressManager } = config
   const log = logger.log
+  
+  progressManager.startNextStep()
   
   log(`开始处理视频文件: ${file.name}`)
   
@@ -75,6 +77,10 @@ export const extractFramesFromVideo = async (
       ctx.drawImage(video, 0, 0, canvas.width, canvas.height)
       const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
       extractedFrames.push(imageData)
+      
+      // 更新进度
+      const progress = ((i + 1) / frameCount) * 100
+      progressManager.updateStepProgress(progress)
       
       if ((i + 1) % LOG_INTERVAL === 0 || i === frameCount - 1) {
         log(`已提取 ${i + 1}/${frameCount} 帧`)

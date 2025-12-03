@@ -92,7 +92,7 @@ export const detectCropRegion = async (
   tolerance: number,
   config: ProcessorConfig,
 ): Promise<CropRegion> => {
-  const { logger, backgroundColor } = config
+  const { logger, backgroundColor, progressManager } = config
 
   if (frames.length === 0) {
     throw new Error('没有可用的帧')
@@ -158,6 +158,8 @@ export const detectCropRegion = async (
     }
     await logger.yield()
   }
+  progressManager.updateStepProgress(25)
+  
   
   // 从右往左找第一列不可裁剪的列（到边框之前结束）
   let right = width - 1 - borderRight
@@ -171,6 +173,7 @@ export const detectCropRegion = async (
       break
     }
   }
+  progressManager.updateStepProgress(50)
   
   // 从上往下找第一行不可裁剪的行（从边框之后开始）
   let top = borderTop
@@ -180,6 +183,7 @@ export const detectCropRegion = async (
       break
     }
   }
+  progressManager.updateStepProgress(75)
   
   // 从下往上找第一行不可裁剪的行（到边框之前结束）
   let bottom = height - 1 - borderBottom
@@ -189,6 +193,7 @@ export const detectCropRegion = async (
       break
     }
   }
+  progressManager.updateStepProgress(100)
   
   const cropRegion: CropRegion = {
     left,

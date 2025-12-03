@@ -1,4 +1,5 @@
 import type { Logger } from '../Logger'
+import type { ProgressManager } from '../progressManager'
 
 export type ProcessorLogger = Logger
 
@@ -55,6 +56,9 @@ export interface ProcessorConfig {
 
   /** 进度回调函数，一般由渲染 GIF 的处理器使用。 */
   onProgress: (progress: number) => void
+
+  /** 全局进度管理器，用于协调各处理步骤的进度更新。 */
+  progressManager: ProgressManager
 
   /** 是否启用调试模式，调试模式下会输出更多日志信息。 */
   debugMode: boolean

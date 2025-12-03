@@ -3,6 +3,7 @@ import { useLocalStorage } from 'react-use'
 import { useLogger, LogViewer } from './Logger'
 import { processFile } from './processFile'
 import type { ProcessorConfig } from './imageProcessor/types'
+import { createDefaultSteps, ProgressManager } from './progressManager'
 
 function App() {
   const [converting, setConverting] = useState(false)
@@ -42,6 +43,7 @@ function App() {
         borderBottomRatio: 0.055,
         fileName: file.name,
         onProgress: setProgress,
+        progressManager: new ProgressManager(createDefaultSteps(), setProgress),
         debugMode,
         file,
         targetSize,
@@ -172,10 +174,32 @@ function App() {
               borderRadius: '8px'
             }}
           >
-            {converting ? `转换中... ${progress}%` : '选择视频文件'}
+            {converting ? '转换中...' : '选择视频文件'}
           </button>
         </label>
       </div>
+
+      {/* 进度条 */}
+      {converting && (
+        <div className="mt-6 max-w-md mx-auto">
+          <div className="flex items-center justify-between mb-2">
+            <span className="text-sm font-medium text-gray-700">处理进度</span>
+            <span className="text-sm font-bold text-blue-600">{progress}%</span>
+          </div>
+          <div className="w-full bg-gray-200 rounded-full h-4 overflow-hidden shadow-inner">
+            <div
+              className="bg-gradient-to-r from-blue-500 to-blue-600 h-full rounded-full transition-all duration-300 ease-out flex items-center justify-end pr-2"
+              style={{ width: `${progress}%` }}
+            >
+              {progress > 10 && (
+                <span className="text-xs text-white font-semibold drop-shadow">
+                  {progress}%
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
       
       <div style={{ marginTop: '20px', display: 'flex', justifyContent: 'flex-end' }}>
         <button

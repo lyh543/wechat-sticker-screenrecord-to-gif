@@ -3,11 +3,21 @@
 set -e
 set +x
 
-pnpm build
-rm -rf /etc/caddy/html/wechat-stickers-new
-cp -r dist /etc/caddy/html/wechat-stickers-new
-if [ -d /etc/caddy/html/wechat-stickers ]; then
-  mv /etc/caddy/html/wechat-stickers /etc/caddy/html/wechat-stickers-old
+# 获取环境参数，默认为 prod
+ENV=${1:-prod}
+
+# 根据环境设置目标目录
+if [ "$ENV" = "test" ]; then
+  TARGET_DIR="/etc/caddy/html/wechat-stickers-test"
+else
+  TARGET_DIR="/etc/caddy/html/wechat-stickers"
 fi
-mv /etc/caddy/html/wechat-stickers-new /etc/caddy/html/wechat-stickers
-rm -rf /etc/caddy/html/wechat-stickers-old
+
+pnpm build
+rm -rf ${TARGET_DIR}-new
+cp -r dist ${TARGET_DIR}-new
+if [ -d ${TARGET_DIR} ]; then
+  mv ${TARGET_DIR} ${TARGET_DIR}-old
+fi
+mv ${TARGET_DIR}-new ${TARGET_DIR}
+rm -rf ${TARGET_DIR}-old

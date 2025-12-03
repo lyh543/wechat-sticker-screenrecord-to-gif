@@ -7,8 +7,10 @@ export const renderGifFromFrames = async (
   frames: ImageData[],
   config: ProcessorConfig,
 ): Promise<void> => {
-  const { fileName, frameRate, onProgress, logger } = config
+  const { fileName, frameRate, onProgress, logger, progressManager } = config
   const log = logger.log
+  
+  progressManager.startNextStep()
   
   if (frames.length === 0) {
     throw new Error('没有可用的帧')
@@ -34,7 +36,9 @@ export const renderGifFromFrames = async (
   log('初始化 GIF 编码器 (workers: 2, quality: 10)')
 
   gif.on('progress', (p) => {
-    onProgress(Math.floor(p * 100))
+    const progress = Math.floor(p * 100)
+    onProgress(progress)
+    progressManager.updateStepProgress(progress)
   })
 
   // Note: gif.js types don't include error event, handling errors via finished event instead
