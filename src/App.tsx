@@ -8,6 +8,7 @@ import { createDefaultSteps, ProgressManager } from './progressManager'
 function App() {
   const [converting, setConverting] = useState(false)
   const [progress, setProgress] = useState(0)
+  const [gifPreview, setGifPreview] = useState<string | null>(null)
   const [cropTolerance = 0.02, ] = useLocalStorage<number>('wechat-sticker-gif-cropTolerance') // 裁剪容差，默认 2%
   const [removeBackground = false, setRemoveBackground] = useLocalStorage<boolean>('wechat-sticker-gif-removeBackground') // 是否去除背景，默认关闭
   const [debugMode = false, setDebugMode] = useLocalStorage<boolean>('wechat-sticker-gif-debugMode') // 调试模式，默认关闭
@@ -22,10 +23,14 @@ function App() {
   const resetState = useCallback(() => {
     setConverting(false)
     setProgress(0)
+    if (gifPreview) {
+      URL.revokeObjectURL(gifPreview)
+      setGifPreview(null)
+    }
     if (fileInputRef.current) {
       fileInputRef.current.value = ''
     }
-  }, [])
+  }, [gifPreview])
 
   const handleFileSelect = useCallback(
     (e: ChangeEvent<HTMLInputElement>) => {
@@ -53,6 +58,7 @@ function App() {
         setConverting,
         setProgress,
         resetState,
+        setGifPreview,
       })
     },
     [
@@ -70,7 +76,7 @@ function App() {
 
 
   return (
-    <div className="max-w-5xl mx-auto p-10 text-center">
+    <div className="w-full max-w-5xl mx-auto p-10 text-center">
       <h1 className="text-5xl font-semibold">微信表情包录屏转 GIF</h1>
       
       <div className="mt-8 mb-5 flex flex-col gap-4 items-center">
@@ -198,6 +204,32 @@ function App() {
               )}
             </div>
           </div>
+        </div>
+      )}
+      
+      {/* GIF 预览 */}
+      {gifPreview && (
+        <div className="mt-8 max-w-md mx-auto">
+          <h2 className="text-xl font-semibold mb-4">预览结果</h2>
+          <div className="bg-gray-100 p-4 rounded-lg">
+            <img 
+              src={gifPreview} 
+              alt="GIF Preview" 
+              className="max-w-full h-auto mx-auto"
+              style={{ imageRendering: 'pixelated' }}
+            />
+          </div>
+          <button
+            onClick={() => {
+              if (gifPreview) {
+                URL.revokeObjectURL(gifPreview)
+                setGifPreview(null)
+              }
+            }}
+            className="mt-4 px-4 py-2 bg-red-500 text-white rounded-lg hover:bg-red-600"
+          >
+            关闭预览
+          </button>
         </div>
       )}
       

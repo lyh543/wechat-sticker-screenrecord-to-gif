@@ -6,7 +6,7 @@ const LOG_INTERVAL = 50
 export const renderGifFromFrames = async (
   frames: ImageData[],
   config: ProcessorConfig,
-): Promise<void> => {
+): Promise<Blob> => {
   const { fileName, frameRate, onProgress, logger, progressManager } = config
   const log = logger.log
   
@@ -69,7 +69,7 @@ export const renderGifFromFrames = async (
       URL.revokeObjectURL(url)
       
       log('下载完成')
-      resolve()
+      resolve(blob)
     })
 
     // Note: gif.js types don't include error event, handling errors via finished event instead

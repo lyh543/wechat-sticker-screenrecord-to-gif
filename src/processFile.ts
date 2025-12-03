@@ -13,13 +13,14 @@ export interface HandleFileSelectDependencies {
   setConverting: (value: boolean) => void
   setProgress: (value: number) => void
   resetState: () => void
+  setGifPreview: (url: string | null) => void
 }
 
 export const processFile = async (
   config: ProcessorConfig,
   deps: HandleFileSelectDependencies,
 ) => {
-  const { setConverting, setProgress, resetState } = deps
+  const { setConverting, setProgress, resetState, setGifPreview } = deps
   const { logger, removeBackground, debugMode, progressManager } = config
 
   logger.log("\n\n")
@@ -75,8 +76,12 @@ export const processFile = async (
     progressManager.completeCurrentStep()
 
     // 生成 GIF
-    await renderGifFromFrames(processedFrames, config)
+    const gifBlob = await renderGifFromFrames(processedFrames, config)
     progressManager?.completeCurrentStep()
+    
+    // 创建预览 URL
+    const previewUrl = URL.createObjectURL(gifBlob)
+    setGifPreview(previewUrl)
     
     // 输出计时统计（调试模式）
     if (debugMode && progressManager) {

@@ -59,9 +59,9 @@ export const LogViewer = ({ logs }: LogViewerProps) => {
         <div className="text-gray-400">暂无日志</div>
       ) : (
         logs.map((entry, index) => (
-          <div key={index} className="mb-1 text-gray-800">
+          <div key={index} className="mb-1 text-gray-800 break-words">
             <span className="text-gray-500">[{entry.timestamp}]</span>{' '}
-            <span>{entry.message}</span>
+            <span className="break-words">{entry.message}</span>
           </div>
         ))
       )}
