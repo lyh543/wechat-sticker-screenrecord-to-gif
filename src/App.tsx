@@ -77,7 +77,7 @@ function App() {
 
   return (
     <div className="w-full max-w-5xl mx-auto p-10 text-center">
-      <h1 className="text-5xl font-semibold">微信表情包录屏转 GIF</h1>
+      <h1 className="text-5xl font-semibold">微信动态表情录屏转 GIF</h1>
       
       <div className="mt-8 mb-5 flex flex-col gap-4 items-center">
         <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '10px' }}>
