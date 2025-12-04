@@ -1,6 +1,6 @@
 # 微信动态表情录屏转 GIF
 
-[在线使用](https://wechat-stickers.lyh543.cn/)
+[English README](README_en.md) | 中文文档 | [在线使用](https://wechat-stickers.lyh543.cn/)
 
 这个项目可以将微信聊天记录中的原生动态表情，通过屏幕录制视频转换为 GIF 格式，方便分享和使用。
 
