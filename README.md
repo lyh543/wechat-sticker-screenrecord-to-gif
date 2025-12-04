@@ -6,6 +6,18 @@
 
 转换过程全程本地完成，无需上传到任何服务器，保障隐私安全。
 
+## 使用方法
+
+<img src="docs/assets/how-to-use-cn_cut_400p_10hz.gif" alt="使用方法" width="270" height="600" />
+
+### 如何创建视频
+
+<img src="docs/assets/how-to-create-screenrecord.gif" alt="使用方法" width="270" height="600" />
+
+### 录屏示例
+
+[录屏示例](docs/assets/screenrecord-example.mp4)
+
 ## TODO
 
 * 优化性能
